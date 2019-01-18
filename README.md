@@ -4,7 +4,7 @@
 
 This repository check-in contains step 1 of the source code for the Simple Capture Demo app by Socket Mobile for Android. 
 
-Simple Capture Demo demonstrates how to start the Capture SDK service component in and Android application, using Xamarin as the development environment. 
+Simple Capture Demo demonstrates how to start the Capture SDK service component in an Android application, using Xamarin as the development environment. 
 
 
 ### System information ###
@@ -15,9 +15,9 @@ Simple Capture Demo demonstrates how to start the Capture SDK service component 
 
 ### How to use the app ###
 
-Download and install the Socket Mobile Companion from the Google Play Store. (This demo program does not require you to run the Companion app or to have a paired scanner.) Then, compile and run the Simple Capture 01 application on your target device.
+Download and install the Socket Mobile Companion from the Google Play Store. (This phase of the demo program does not require you to run the Companion app or to have a paired scanner.) Then, compile and run the Simple Capture Demo application on your target device.
 
-This very simple application shows how to get the underlying Capture servcie running on the target Android device. There is practically no user interface in this application. To confirm it is working, you must "pull down" your notifications and check to see if "Companion - Companion service is running" is shown in the notification list.
+This very simple application shows how to get the underlying Capture service running on the target Android device. There is practically no user interface in this application. To confirm it is working, you must "pull down" your notifications and check to see if "Companion - Companion service is running" is shown in the notification list.
 
 
 ### License and agreement ###
