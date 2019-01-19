@@ -1,9 +1,9 @@
 # README #
 
 
-This repository contains step 2 of the source code for the Simple Capture Demo app by Socket Mobile for Android. 
+This repository contains step 1 - 3 of the source code for the Simple Capture Demo app by Socket Mobile for Android. 
 
-This phase of Simple Capture Demo builds upon the first phase, and shows how to integrate and start the Capture SDK client component in an Android application.
+Third phase adds CaptureHelper event handling for device arrival, removal, and scanned data. Also shows how to get information about the connected scanner (Bluetooth FriendlyName and battery level).
 
 
 ### System information ###
@@ -14,9 +14,9 @@ This phase of Simple Capture Demo builds upon the first phase, and shows how to 
 
 ### How to use the app ###
 
-Download and install the Socket Mobile Companion from the Google Play Store. (This demo program does not require you to run the Companion app or to have a paired scanner.) Then, compile and run the Simple Capture Demo application on your target device.
+Download and install the Socket Mobile Companion from the Google Play Store. Run the Companion app and configure your Socket scanner for Application mode. Then, compile and run the Simple Capture Demo application on your target device.
 
-This application shows how to get the Capture servcie and client (CaptureHelper) up and running. There is practically no user interface in this application. To confirm it is working, a toast notification will report the client initialization return code, and the retry count that was needed to get the client started.
+This application shows how to get the Capture service and client (CaptureHelper) up and running. There is practically no user interface in this application. To confirm it is working, a toast notification will report the client initialization return code, and the retry count that was needed to get the client started. Toast notifications also show scanner connection/disconnection (or "arrival" and "removal") as well as scanned data received from the connected device.
 
 
 ### License and agreement ###
