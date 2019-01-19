@@ -16,7 +16,13 @@
 /// Second phase builds on first phase. It adds the code necessary for
 /// starting a CaptureHelper client, that the application will use to
 /// communicate with the Capture service.
+/// 
+/// Third phase builds on the previous two. It shows how to get event
+/// notifications from Capture and how to process them. Scanner arrival,
+/// scanner removal, and scanned data handling are demonstrated. It also shows
+/// how to query the connected scanner for device information.
 
+using System;
 using System.Threading.Tasks;
 
 using Android.App;
@@ -65,6 +71,18 @@ namespace SimpleCaptureDemo
             return result;
         }
 
+#if DEBUG
+        // This lets us get Capture debug messages in the Xamarin Application Output window
+        class DebugConsole : CaptureHelperDebug
+        {
+            public void PrintLine(string message)
+            {
+                DateTimeOffset dtNow = System.DateTimeOffset.Now;
+                Console.WriteLine("[CAPTURE DEMO DEBUG] " + dtNow.ToString("HH:mm:ss:fff") + ": " + message);
+            }
+        }
+#endif
+
         // Open the CaptureHelper client
         //
         // Since we don't know how long it may take for the Capture service to
@@ -83,7 +101,16 @@ namespace SimpleCaptureDemo
             const int MaxRetries = 60;
             const int RetryIntervalMs = 500;
             long result;
+
             Capture = new CaptureHelper();
+
+#if DEBUG
+            Capture.DebugConsole = new DebugConsole();
+#endif
+            Capture.DoNotUseWebSocket = true;
+            Capture.DeviceArrival += OnDeviceArrival;
+            Capture.DeviceRemoval += OnDeviceRemoval;
+            Capture.DecodedData += OnDecodedData;
 
             while ((result = await OpenCapture()) == SktErrors.ESKT_UNABLEOPENDEVICE)
             {
@@ -124,6 +151,53 @@ namespace SimpleCaptureDemo
         {
             StopCaptureClient();
             base.OnDestroy();
+        }
+
+        public async void OnDeviceArrival(object sender, CaptureHelper.DeviceArgs arrivedDevice)
+        {
+            // There are a few interesting things you can find out about the arrived scanner
+            // by calling the GetDeviceInfo() member function. It returns a DeviceInfo
+            // structure which, among other things, contains the FriendlyName of the device.
+            string FriendlyName = arrivedDevice.CaptureDevice.GetDeviceInfo().Name;
+
+            // Other CapturHelper functions can be used to learn even more about 
+            // the connected device, such as the battery level (and many other 
+            // device properties).
+            CaptureHelperDevice.BatteryLevelResult resultBattery = await arrivedDevice.CaptureDevice.GetBatteryLevelAsync();
+
+            // You can easily modify this routine to report the BDADDR of the 
+            // connected device, too - arrivedDevice.CaptureDevice.GetBluetoothAddressAsync()
+            // would do the trick.
+
+            // And since CaptureHelper is given to you in the form of C# source
+            // code, you can add your own helper functions and extend the
+            // capabilities by studying the implementation of the existing functions.
+            // If you decide to do this, you should create an extension of CaptureHelper
+            // and implement the additions in a new source file. That way, when you
+            // update the CaptureHelper SDK at a later date, you won't lose your 
+            // changes when the new CaptureHelper.cs file is written to your workstation.
+
+            // Now show it all in a toast - be sure to run on the UI thread since this callback (and other CaptureHelper callbacks) do not come in on the UI thread!
+            RunOnUiThread(() =>
+            {
+                Android.Widget.Toast.MakeText(this, "Arrival:\n" + FriendlyName + "\nBattery: " + resultBattery.Percentage,  Android.Widget.ToastLength.Long).Show();
+            });
+        }
+
+        public void OnDeviceRemoval(object sender, CaptureHelper.DeviceArgs removedDevice)
+        {
+            RunOnUiThread(() =>
+            {
+                Android.Widget.Toast.MakeText(this, "Scanner removed.", Android.Widget.ToastLength.Short).Show();
+            });
+        }
+
+        public void OnDecodedData(object sender, CaptureHelper.DecodedDataArgs decodedData)
+        {
+            RunOnUiThread(() =>
+            {
+                Android.Widget.Toast.MakeText(this, "Scanned data: " + decodedData.DecodedData.DataToUTF8String, Android.Widget.ToastLength.Short).Show();
+            });
         }
     }
 }
