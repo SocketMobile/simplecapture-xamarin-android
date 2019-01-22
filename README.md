@@ -27,3 +27,15 @@ The app integrates Socket Mobile Capture SDK and is free for adaptation per your
 ### Contact us ###
 
 For inquiries regarding the development of this app as well as Capture SDK integration, please email developers@socketmobile.com. 
+
+
+### Screenshots ###
+
+![CaptureHelper Initialization](./img/Screenshot_1.png "CaptureHelper initialization")
+
+![Scanner Connection](./img/Screenshot_2.png "Scanner connection")
+
+![Scanned Data](./img/Screenshot_3.png "Scanned data")
+
+![Scanner Disconnected](./img/Screenshot_4.png "Scanner disconnected")
+
