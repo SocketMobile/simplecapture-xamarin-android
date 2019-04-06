@@ -45,7 +45,7 @@
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\portable-net45+wp80+win8+wpa81\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="SocketMobile.Capture">
-      <HintPath>..\packages\SocketMobile.Capture.1.0.475.552\lib\MonoAndroid10\SocketMobile.Capture.dll</HintPath>
+      <HintPath>..\packages\SocketMobile.Capture.1.0.506.9\lib\MonoAndroid10\SocketMobile.Capture.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

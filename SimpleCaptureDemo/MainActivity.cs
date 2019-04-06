@@ -24,6 +24,7 @@
 
 using System;
 using System.Threading.Tasks;
+using System.Timers;
 
 using Android.App;
 using Android.OS;
@@ -42,6 +43,7 @@ namespace SimpleCaptureDemo
         public string CaptureServiceStartCmd = "com.socketmobile.capture.StartService";
 
         public CaptureHelper Capture = null;
+        Timer BatteryPollingTimer = null;
 
         // Start the Capture service by constructing and broadcasting an intent
         private void StartCaptureService()
@@ -82,6 +84,13 @@ namespace SimpleCaptureDemo
             }
         }
 #endif
+
+        void DebugPrint(string message)
+        {
+#if DEBUG
+            Capture.DebugConsole.PrintLine(message);
+#endif
+        }
 
         // Open the CaptureHelper client
         //
@@ -153,6 +162,56 @@ namespace SimpleCaptureDemo
             base.OnDestroy();
         }
 
+        void StartBatteryPolling()
+        {
+            DebugPrint("Begin StartBatteryPolling()");
+            BatteryPollingTimer = new Timer();
+            BatteryPollingTimer.AutoReset = true;
+            BatteryPollingTimer.Interval = 5000;
+            BatteryPollingTimer.Elapsed += async (object sender, ElapsedEventArgs e) =>
+            {
+                DebugPrint("Begin BatteryPollingTimer elapsed event");
+                if (Capture.GetDevicesList().Count != 0)
+                {
+                    DebugPrint("Capture device list count != 0");
+                    CaptureHelperDevice ConnectedScanner = Capture.GetDevicesList()[0];
+                    if (ConnectedScanner != null)
+                    {
+                        DebugPrint("ConnectedScanner is not null");
+                        CaptureHelperDevice.BatteryLevelResult resultBattery = await ConnectedScanner.GetBatteryLevelAsync();
+                        if (resultBattery.IsSuccessful())
+                        {
+                            DebugPrint("GetBatteryLevelAsync() has returned");
+                            RunOnUiThread(() =>
+                            {
+                                Android.Widget.Toast.MakeText(this, "Battery level: " + resultBattery.Percentage, Android.Widget.ToastLength.Short).Show();
+                            });
+                        }
+                        else
+                        {
+                            DebugPrint("GetBatteryLevelAsync() returned failure code: " + resultBattery.Result);
+                        }
+                    }
+                }
+                DebugPrint("End BatteryPollingTimer elapsed event");
+            };
+            DebugPrint("Starting the battery polling timer");
+            BatteryPollingTimer.Start();
+            DebugPrint("End StartBatteryPolling()");
+        }
+
+        void StopBatteryPolling()
+        {
+            DebugPrint("Begin StopBatteryPolling()");
+            if (BatteryPollingTimer != null)
+            {
+                DebugPrint("BatteryPollingTimer is not null");
+                BatteryPollingTimer.Stop();
+                BatteryPollingTimer = null;
+            }
+            DebugPrint("End StopBatteryPolling()");
+        }
+
         public async void OnDeviceArrival(object sender, CaptureHelper.DeviceArgs arrivedDevice)
         {
             // There are a few interesting things you can find out about the arrived scanner
@@ -182,10 +241,18 @@ namespace SimpleCaptureDemo
             {
                 Android.Widget.Toast.MakeText(this, "Arrival:\n" + FriendlyName + "\nBattery: " + resultBattery.Percentage,  Android.Widget.ToastLength.Long).Show();
             });
+
+            // Get the scanner's firmware version
+            CaptureHelper.VersionResult version = await arrivedDevice.CaptureDevice.GetFirmwareVersionAsync();
+            Console.WriteLine("Scanner firmware version is: " + version.ToStringVersion());
+
+            await Capture.SetDataConfirmationModeAsync(ICaptureProperty.Values.ConfirmationMode.kApp); 
+            //StartBatteryPolling();
         }
 
         public void OnDeviceRemoval(object sender, CaptureHelper.DeviceArgs removedDevice)
         {
+            //StopBatteryPolling();
             RunOnUiThread(() =>
             {
                 Android.Widget.Toast.MakeText(this, "Scanner removed.", Android.Widget.ToastLength.Short).Show();
@@ -194,10 +261,13 @@ namespace SimpleCaptureDemo
 
         public void OnDecodedData(object sender, CaptureHelper.DecodedDataArgs decodedData)
         {
+            string Data = decodedData.DecodedData.DataToUTF8String;
+            CaptureHelperDevice CurrentDevice = Capture.GetDevicesList()[0]; 
             RunOnUiThread(() =>
             {
                 Android.Widget.Toast.MakeText(this, "Scanned data: " + decodedData.DecodedData.DataToUTF8String, Android.Widget.ToastLength.Short).Show();
             });
+            if (Data.EndsWith('6'))             {                 CurrentDevice.SetDataConfirmationAsync(ICaptureProperty.Values.DataConfirmation.kBeepBad, ICaptureProperty.Values.DataConfirmation.kLedRed, ICaptureProperty.Values.DataConfirmation.kRumbleBad);             }             else             {                 CurrentDevice.SetDataConfirmationAsync(ICaptureProperty.Values.DataConfirmation.kBeepGood, ICaptureProperty.Values.DataConfirmation.kLedGreen, ICaptureProperty.Values.DataConfirmation.kRumbleGood);             }
         }
     }
 }

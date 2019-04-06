@@ -8,8 +8,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -74,10 +72,10 @@ namespace SocketMobile
             /// provides a UI Thread context in order to receive the CaptureHelper and
             /// CaptureHelperDevice event in the context of the UI thread.
             /// For example: captureHelper.ContextForEvents = SynchronizationContext.Current;
-			/// Setting this is optional, if left null CaptureHelper will not 
-			/// try to update the UI.
-			/// Note: Setting this MUST be done on the UI thread only. See Microsoft
-			/// documentation for SynchronizationContext.
+            /// Setting this is optional, if left null CaptureHelper will not
+            /// try to update the UI.
+            /// Note: Setting this MUST be done on the UI thread only. See Microsoft
+            /// documentation for SynchronizationContext.
             /// </summary>
             public SynchronizationContext ContextForEvents;
 
@@ -690,21 +688,56 @@ namespace SocketMobile
                 add
                 {
                     deviceArrival += value;
-                    lock (_devices)
+                    if (ContextForEvents == null)
                     {
-                        if (_devices.Count > 0)
+                        Task<long> result = DoDeviceArrival(_devices);
+                    }
+                    else
+                    {
+                        ContextForEvents.Post(new SendOrPostCallback(async (o) =>
                         {
-                            foreach (CaptureHelperDevice device in _devices)
-                            {
-                                OnDeviceArrival(device);
-                            }
-                        }
+                            await DoDeviceArrival(_devices);
+                        }), null);
                     }
                 }
                 remove
                 {
                     deviceArrival -= value;
                 }
+            }
+
+            private Task<long> DoDeviceArrival(List<CaptureHelperDevice> devices)
+            {
+                Task<long> ret = Task.Run<long>(() =>
+                {
+                    lock (devices)
+                    {
+                        if (devices.Count > 0)
+                        {
+                            foreach (CaptureHelperDevice device in devices)
+                            {
+                                try
+                                {
+                                    OnDeviceArrival(device);
+                                }
+#if DEBUG
+                                catch (Exception ex)
+                                {
+                                    if (DebugConsole != null)
+                                    {
+                                        DebugConsole.PrintLine("CaptureHelper catch an error in OnDeviceArrival " + ex.Message);
+                                    }
+#else
+                                catch(Exception)
+                                { 
+#endif
+                                }
+                            }
+                        }
+                    }
+                    return 0;
+                });
+                return ret;
             }
 
             /// <summary>
@@ -960,14 +993,14 @@ namespace SocketMobile
                                 DebugConsole.PrintLine("about to open the Capture Device " + e.captureEvent.DeviceInfo.Guid);
                             }
 #endif
-                            long resultOpen = await device.OpenAsync(e.captureEvent.DeviceInfo.Guid);
+                            result = await device.OpenAsync(e.captureEvent.DeviceInfo.Guid);
 #if DEBUG
                             if (DebugConsole != null)
                             {
                                 DebugConsole.PrintLine("done opening the Capture Device " + e.captureEvent.DeviceInfo.Guid + " : " + result);
                             }
 #endif
-                            if (SktErrors.SKTSUCCESS(resultOpen))
+                            if (SktErrors.SKTSUCCESS(result))
                             {
                                 // attach the device info to the capture device interface
                                 lock (_devices)
@@ -980,7 +1013,7 @@ namespace SocketMobile
                             }
                             else
                             {
-                                OnError(resultOpen, "Error while opening the device " + e.captureEvent.DeviceInfo.Name);
+                                OnError(result, "Error while opening the device " + e.captureEvent.DeviceInfo.Name);
                             }
                         }
                         break;
@@ -1413,6 +1446,9 @@ public partial class CaptureHelperDevice
                             break;
                         case DeviceType.kScannerS750:
                             deviceName = "SocketScan S750";
+                            break;
+                        case DeviceType.kScannerS760:
+                            deviceName = "SocketScan S760";
                             break;
                         case DeviceType.kScannerS860:
                             deviceName = "SocketScan S860";
